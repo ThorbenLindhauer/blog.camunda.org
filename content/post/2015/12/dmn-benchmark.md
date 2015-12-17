@@ -6,7 +6,10 @@ tags = ["DMN"]
 title = "Benchmarking the Performance of the camunda DMN Engine"
 +++
 
-With camunda 7.4, we released the new camunda DMN engine. Some people asked how fast the DMN engine is. So I created a benchmark that measure the number of decision tables the DMN engine can evaluate per second. Since the DMN engine may usually used inside of camunda BPM (e.g. as Business Rule Task), I also did the measurement in combination with camunda BPM and determine the impact of writing the history.
+With camunda 7.4, we released the new [Camunda DMN engine](https://docs.camunda.org/manual/7.4/user-guide/dmn-engine/). Some people asked how fast the DMN engine is. So I created a benchmark measuring the number of decision tables the DMN engine can evaluate per second.
+
+The DMN engine can be used both standalone (as a stateless decision engine) and embedded inside Camunda Process Engine (adding features such as Repository, History and Auditing and integration in BPMN).
+In this post I show results for both usage scenarios. This gives insight into the overhead introduced by features such as the repository and the history.
 
 <!--more-->
 
@@ -31,7 +34,7 @@ I did the benchmarks on my local machine:
 * SSD Hard Disk,
 * Windows 10
 
-Using a local MySQL database and only one thread.
+All Tests use a single thread. For the tests using history and repository, I used a local MySQL database.
 
 Note that we are not interested in absolute numbers anyway since it depends on a huge number of factors (e.g. processing power, main memory, network, database, decision table, expression language etc.). You can easily run the benchmarks on your own infrastructure and with your own decision tables. See the github repositories for details:
 
@@ -40,7 +43,7 @@ Note that we are not interested in absolute numbers anyway since it depends on a
 
 ## Standalone DMN Engine
 
-The first benchmark uses the DMN engine independent from camunda BPM as standalone DMN engine. It embeds the engine as library and measure the number of decision tables that are evaluated per second. To focus on evaluation, the decision tables are parsed before. 
+The first benchmark uses the DMN engine standalone (independently from Camunda Process Engine). It measures the number of decision tables that are evaluated per second. To focus on evaluation, the decision tables are parsed before. 
 
 {{< figure class="teaser no-border" src="benchmark-dmn-standalone.png" alt="Benchmark of the Standalone DMN Engine" caption="" >}}
 
@@ -53,37 +56,37 @@ The first benchmark uses the DMN engine independent from camunda BPM as standalo
 
 <br/>
 
-The DMN engine can evaluate up to 220.021 decision tables per seconds. This means that evaluating a single decision table of this takes 0,0045 Milliseconds. That is a good first result since the engine is not optimized yet.
+The DMN engine can evaluate up to 220.021 decision tables per second with a single thread. This means that evaluating a single decision table takes 0,0045 Milliseconds. This is a good first result since the engine is not optimized yet.
 
-The results show that the number of the evaluated input entries is the major performance factor. The output entries has less impact which is not surprising since the expression is simpler. So the more rules or input entries a decision table have, the more time is needed for evaluation.
+The results show that the number of the evaluated input entries is the major performance factor. The output entries have less impact which is not surprising since the expression is simpler. The more rules or input entries a decision table has, the more time is needed for evaluation.
 
-Note that the performance can be influenced when the decision table has more than one input. During the evaluation of a rule, the input entries are evaluated to check if the rule is matched. If the check of an input entry return false then the other input entries are not evaluated since the rule can not be matched anymore.
+The results also show that the performance can be influenced when the decision table has more than one input. During the evaluation of a rule, the input entries are evaluated to check if the rule is matched. If the check of an input entry returns false then the other input entries are not evaluated since the rule can not be matched anymore.
 
 ## Integeration in camunda BPM
 
-Let's repeat the measurement with the camunda BPM engine that includes the DMN engine. The benchmark using the decision service of the process engine to evaluate the decision tables that are deployed before.
+Let's repeat the measurement with the Camunda Process Engine that includes the DMN engine. The benchmark using the decision service of the process engine to evaluate the decision tables that are deployed before.
 
 {{< figure class="teaser no-border" src="benchmark-dmn-camunda-integration.png" alt="Benchmark of the DMN Engine inside of camunda BPM" caption="" >}}
 
-First, you may recognised that the number of evaluations is much lower than using the DMN engine without camunda BPM. The main reason is the database where the decision table is deployed. Every time a decision table is evaluated, it has to be fetched from the database first. This select statement has a huge impact against the evaluation in the DMN engine. 
+First, you may recognize that the number of evaluations is much lower than using the DMN engine standalone. The main reason for this is the repository feature: the test starts the "latest" version of a decision table. For each evaluation, the latest version needs to be determined which is effectively a SQL `SELECT` statement. Obviously, this `SELECT` statement has a huge impact on performance.
 
-Since the sql statement is only executed once, the influence is less when more input entries are evaluated. For example, the decision table with 100 rules can be evaluated only 2,5 times less than using the standalone DMN engine.
+This `SELECT` statement is a lot more expensive than the other operations necessary to evaluate a decision table. As a result, it dominates the performance of the evaluation. This explains why increasing the number of input entries and rules has propotionally less influence on performance than when the DMN engine is used standalone.
  
 ## History vs. No History
 
-At History Level None, the process engine does not perform any inserts to the database, it will just perform the single select statement. Turning on history the process engine insert history entries after each evaluation of a decision table. This has obviously a big performance impact.
+At History Level None, the process engine does not perform any inserts to the database, it will just perform the single select statement to verify it has the latest version in the cache. Let's now check how switching on history influences the the performance. In case you are not familiar with the history feature in Camunda: it is possinble to record each evaluated decision ("decision instance") including information about the inputs and the matched rules. Read the [Documentation](https://docs.camunda.org/manual/7.4/user-guide/process-engine/decisions/history/) for more information.
 
 {{< figure class="teaser no-border" src="benchmark-dmn-camunda-history-level.png" alt="Benchmark of the History Level" caption="" >}}
 
-With history, the engine can still evaluate up to 876 decision tables per second. This is five times less than without history. 
+As we can see, history comes with an additional performance penalty. With history, the engine evaluates up to 876 decision tables per second. This is five times less than without history.
 
-A look at the SQL Statement Log shows that the engine performed four inserts, additionally to the one select statement. 
+A look at the SQL Statement Log shows that the engine performes 4 inserts in addition to one select statement. 
 
 {{< figure class="teaser no-border" src="sql-statement-log-full-history.png" alt="SQL Statement Log" caption="" >}}
 
-You can see that the number of inserts increased depending on the number of rules. The detail view shows why. 
+You can see that the number of inserts increases depending on the number of rules. The detail view shows why. 
 
-```
+```json
 {
   "statementType" : "SELECT_MAP",
   "statement" : "selectLatestDecisionDefinitionByKey",
@@ -119,4 +122,6 @@ You can see that the number of inserts increased depending on the number of rule
 }
 ```
 
-The process engine performs one insert for each output value. So the number of matching rules and the number of outputs have an influence of the performance when the history is on. 
+The process engine performs one insert for each output value. So the number of matching rules and the number of outputs have an influence of the performance when the history is on.
+
+This concludes my little excursion into the world of DMN benchmarking. Make sure to leave comments below the post in case you have any questions on this.
