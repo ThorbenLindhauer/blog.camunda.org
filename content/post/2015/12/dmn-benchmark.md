@@ -142,7 +142,7 @@ Now, let's switch that off as well:
 
 **Baam!**
 
-The DMN engine can now evaluate up to 220.021 decisions/second with a single thread! I repeat: with a single thread! This means that evaluating a single decision table takes 0,0045 Milliseconds. This is a good first result since the engine is not optimized yet.
+The DMN engine can now evaluate up to 220.021 decisions/second with a single thread! I repeat: with a single thread! This means that evaluating a single decision table takes 0,0045 Milliseconds.
 
 Looking a little closer into the results, we see that the number of the evaluated input entries is the major performance factor. The output entries have less impact which is not surprising since the expression is simpler. The more rules or input entries a decision table has, the more time is needed for evaluation.
 
