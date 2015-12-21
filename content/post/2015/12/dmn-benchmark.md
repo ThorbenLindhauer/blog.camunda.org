@@ -16,13 +16,13 @@ The benchmark measures executed decision tables / second.
 
 ## The Decision Tables Used
 
-Different decision tables are used. This allows us to get insights on the influence of
+Different decision tables are used. This allows us to get insights on how
 
 * the total number of rules,
 * the number of matching rules,
 * the number of inputs
 
-influences the performance.
+influence performance.
 
 All decision tables pass the input values from a double variable. The variable is compared with a double value that controls the number of matching rules. The output value is a string.
 
@@ -40,7 +40,7 @@ I did the benchmarks on my local machine:
 **All Tests use a single thread.**
 For the tests using history and repository, I used a local MySQL database.
 
-Note that we are not interested in absolute numbers anyway since it depends on a huge number of factors (e.g. processing power, main memory, network, database, decision table, expression language etc.). You can easily run the benchmarks on your own infrastructure and with your own decision tables. See the github repositories for details:
+Note that we are not interested in absolute numbers anyway, as that depends on a huge amount of factors (e.g., processing power, main memory, network, database, decision table, expression language, etc.). You can easily run the benchmarks on your own infrastructure and with your own decision tables. See the GitHub repositories for details:
 
 * [Standalone DMN Engine Benchmark](https://github.com/camunda/camunda-engine-dmn-benchmark)
 * [Process Engine Performance Test Suite](https://github.com/camunda/camunda-bpm-platform/tree/master/qa/performance-tests-engine)
@@ -58,7 +58,7 @@ This is the equivalent of using the decision engine from a BPMN Business Rules t
 
 As you can see in the chart above, at history Level full, the decision engine can evaluate around 876 evaluations/second with two rules, a little over 600 evaluations/second with 5 rules and over 400 evaluations/second with 10 rules. This is a decent result!
 
-At 100 matched rules (ie. all rules match) the throughput is 81 decisions/second. This is not bad if we consider that that we use a single thread (using more threads would increase the performance) and also considering that this means that 100 rules _match_. I repeat that: it does not mean that there _are_ 100 rules, it means that 100 rules _match_ or in other words: 100 rules are _true_. In reality this will most likely not happen: what is the point of evaluating a decision table with 100 rules, if all of these are true? But in this benchmark we want to push things to the max.
+At 100 matched rules (i.e., all rules match) the throughput is 81 decisions/second. This is not bad if we consider that that we use a single thread (using more threads would increase the performance) and also considering that this means that 100 rules _match_. I repeat that: it does not mean that there _are_ 100 rules, it means that 100 rules _match_ or in other words: 100 rules are _true_. In reality this will most likely not happen: what is the point of evaluating a decision table with 100 rules, if all of these are true? However, in this benchmark we want to push things to the max.
 
 ## Turn off History
 
@@ -135,7 +135,7 @@ Now, let's switch that off as well:
 
 **Baam!**
 
-The DMN engine can now evaluate up to 220.021 decisions/second with a single thread! I repeat: with a single thread! This means that evaluating a single decision table takes 0,0045 Milliseconds.
+The DMN engine can now evaluate up to 220.021 decisions/second with a single thread! I repeat: with a single thread! This means that evaluating a single decision table takes 0,0045 milliseconds.
 
 Looking a little closer into the results, we see that the number of the evaluated input entries is the major performance factor. The output entries have less impact which is not surprising since the expression is simpler. The more rules or input entries a decision table has, the more time is needed for evaluation.
 
