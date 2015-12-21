@@ -1,12 +1,12 @@
 +++
-author = "Philipp Ossler"
+author = "Daniel Meyer, Philipp Ossler"
 categories = ["Execution"]
-date = "2015-12-18"
+date = "2015-12-22"
 tags = ["DMN"]
 title = "Benchmarking the Performance of the camunda DMN Engine"
 +++
 
-With camunda 7.4, we released the new [Camunda DMN engine](https://docs.camunda.org/manual/7.4/user-guide/dmn-engine/). Some people asked how fast the DMN engine is. So I created a benchmark measuring the number of decision tables the DMN engine can evaluate per second. Below you'll see that I can push the performance to > 200000 evaluated decisions / second on my notebook, using a single thread!
+With camunda 7.4, we released the new [Camunda DMN engine](https://docs.camunda.org/manual/7.4/user-guide/dmn-engine/). Some people asked how fast the DMN engine is. So I created a benchmark measuring the number of decision tables the DMN engine can evaluate per second. Below you'll see that I can push the performance to > 200.000 evaluated decisions / second on my notebook, using a single thread!
 
 <!--more-->
 
@@ -26,7 +26,7 @@ influences the performance.
 
 All decision tables pass the input values from a double variable. The variable is compared with a double value that controls the number of matching rules. The output value is a string.
 
-{{< figure class="teaser no-border" src="decision-table.png" alt="One of the evaluated decision tables." caption="Decision Table with five Rules and one Input" >}}
+{{< figure src="decision-table.png" alt="One of the evaluated decision tables." caption="Decision Table with five Rules and one Input" >}}
 
 ## Benchmark Infrastructure
 
@@ -66,13 +66,13 @@ Let's now switch off history to see how much faster this thing can run without t
 
 {{< figure class="teaser no-border" src="benchmark-dmn-camunda-integration.png" alt="Benchmark of the DMN Engine inside of camunda BPM" caption="" >}}
 
-Wow, that is quite a significant improvement. With history, the engine evaluates up to 876 decision tables per second. Without it is around 4500 with is around five times better than without history.
+Wow, that is quite a significant improvement. With history, the engine evaluates up to 876 decision tables per second. Without it is around 4.500 which is around five times better than without history.
 
 Where does this performance gain come from?
 
 A brief look into the SQL Statement Log shows that at history level `FULL` the engine performs 4 `INSERT` and one `SELECT` statement:
 
-{{< figure class="teaser no-border" src="sql-statement-log-full-history.png" alt="SQL Statement Log" caption="" >}}
+{{< figure src="sql-statement-log-full-history.png" alt="SQL Statement Log" caption="" >}}
 
 The number of inserts increases depending on the number of rules. The detail view shows why. 
 
@@ -131,14 +131,7 @@ Now, let's switch that off as well:
 
 {{< figure class="teaser no-border" src="benchmark-dmn-standalone.png" alt="Benchmark of the Standalone DMN Engine" caption="" >}}
 
-| Rules | 1 input 50% matched rules | 1 input - 100% matched rules | 2 inputs - 50% matched rules | 2 inputs - 100% matched rules |
-|---|---|---|---|---|
-| 2 | 220.021 | 209.189 | 147.782 | 114.469 |
-| 5 | 95.544 | 94.730 | 60.826 | 49.348 |
-| 10 | 49.536 | 47.254 | 34.294 | 24.795 |
-| 100 | 5.077 | 4.712 | 3.466 | 2.562 |
-
-<br/>
+{{< figure src="benchmark-dmn-standalone-data.png" alt="Benchmark of the Standalone DMN Engine" caption="" >}}
 
 **Baam!**
 
